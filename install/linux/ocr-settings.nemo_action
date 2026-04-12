@@ -1,7 +1,7 @@
 [Nemo Action]
 Name=OCR Settings
 Comment=Configure Adobe PDF Services credentials
-Exec=<HOME_SCRIPTS/pdf-ocr-converter/install/linux/setup_credentials.sh>
-Icon-Name=<HOME_SCRIPTS/pdf-ocr-converter/pdf-ocr-icon.svg
+Exec=__PROJECT_DIR__/install/linux/setup_credentials.sh
+Icon-Name=__PROJECT_DIR__/pdf-ocr-icon.svg
 Selection=any
 Extensions=pdf;
