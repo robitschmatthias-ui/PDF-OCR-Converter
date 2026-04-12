@@ -79,6 +79,8 @@ def main(argv: list[str]) -> int:
     first = files[0]
     output_docx = first.with_name(f"{first.stem}_OCR.docx")
     locale = _choose_locale(cfg.default_locale)
+    if not locale:
+        return 0  # User cancelled
 
     tmp_fd, tmp_name = tempfile.mkstemp(prefix="pdfocr-merge-", suffix=".pdf")
     os.close(tmp_fd)

@@ -41,13 +41,24 @@ def _choose_locale(default: str) -> str:
 
     from setup_credentials import SUPPORTED_LOCALES
 
-    result = {"locale": default}
+    result = {"locale": default, "confirmed": False}
     root = tk.Tk()
-    root.title("OCR Language")
-    root.geometry("320x140")
+    root.title("PDF-OCR-Converter — Document Language")
+    root.geometry("420x180")
     frm = ttk.Frame(root, padding=16)
     frm.pack(fill="both", expand=True)
-    ttk.Label(frm, text="Select OCR language:").pack(anchor="w", pady=(0, 8))
+    ttk.Label(
+        frm,
+        text="In which language is the text of the PDF you want to convert?",
+        wraplength=380,
+        font=("", 10, "bold"),
+    ).pack(anchor="w", pady=(0, 6))
+    ttk.Label(
+        frm,
+        text="Choose the language Adobe OCR should use to recognize the text.",
+        foreground="gray",
+        wraplength=380,
+    ).pack(anchor="w", pady=(0, 10))
     var = tk.StringVar(value=default)
     ttk.Combobox(frm, textvariable=var, values=SUPPORTED_LOCALES,
                  state="readonly").pack(fill="x")
@@ -56,11 +67,14 @@ def _choose_locale(default: str) -> str:
 
     def ok():
         result["locale"] = var.get()
+        result["confirmed"] = True
         root.destroy()
 
-    ttk.Button(btns, text="OK", command=ok).pack(side="right")
+    ttk.Button(btns, text="Start OCR", command=ok).pack(side="right")
     ttk.Button(btns, text="Cancel", command=root.destroy).pack(side="right", padx=(0, 8))
     root.mainloop()
+    if not result["confirmed"]:
+        return ""
     return result["locale"]
 
 
@@ -151,6 +165,8 @@ def main(argv: list[str]) -> int:
         return 1
 
     locale = _choose_locale(cfg.default_locale)
+    if not locale:
+        return 0  # User cancelled
     pdf_services = _build_services(cfg.client_id, cfg.client_secret)
 
     errors = 0
