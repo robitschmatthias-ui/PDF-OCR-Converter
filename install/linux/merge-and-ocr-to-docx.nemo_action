@@ -2,7 +2,7 @@
 Name=Merge & OCR to DOCX
 Comment=Merge selected PDFs and convert to DOCX via Adobe OCR
 Exec=<HOME_SCRIPTS/pdf-ocr-converter/install/linux/merge_and_ocr.sh %F>
-Icon-Name=x-office-document
+Icon-Name=<HOME_SCRIPTS/pdf-ocr-converter/pdf-ocr-icon.svg
 Selection=m
 Extensions=pdf;
 Quote=double
