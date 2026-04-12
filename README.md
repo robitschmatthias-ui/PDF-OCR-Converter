@@ -1,7 +1,3 @@
-<p align="center">
-  <img src="pdf-ocr-icon.svg" alt="PDF-OCR-Converter logo" width="96" height="96">
-</p>
-
 # PDF-OCR-Converter
 
 ![platform](https://img.shields.io/badge/platform-Linux%20%7C%20Windows-blue)
@@ -41,6 +37,25 @@ inherits the name of the **first** file in the selection.
 - An Adobe Developer Console account with PDF Services API credentials
   (see [docs/adobe-credentials.md](docs/adobe-credentials.md))
 - **Free tier:** 500 transactions/month (~250 OCR conversions)
+
+## Getting Adobe API credentials
+
+You need a free Adobe Developer account (free tier: 500 transactions/month).
+
+1. Go to <https://developer.adobe.com/console> and sign in (or sign up — free).
+2. Click **Create new project**.
+3. In the project, click **Add API** → select **PDF Services API** → **Next**.
+4. Choose **OAuth Server-to-Server** authentication → **Save configured API**.
+5. On the credentials page, copy:
+   - **Client ID**
+   - **Client Secret** (click *"Retrieve client secret"*)
+6. Enter both in the setup dialog (opens automatically on first install, or via
+   right-click → **OCR Settings**).
+
+Credentials are saved to `~/.config/pdf-ocr-converter/.env` on Linux or
+`%APPDATA%\pdf-ocr-converter\.env` on Windows — never inside the repo.
+
+For the full walkthrough see [docs/adobe-credentials.md](docs/adobe-credentials.md).
 
 ## Installation
 
