@@ -1,0 +1,9 @@
+[Nemo Action]
+Name=OCR to DOCX
+Comment=Convert PDF(s) to DOCX via Adobe OCR
+Exec=<HOME_SCRIPTS/pdf-ocr-converter/install/linux/ocr_convert.sh %F>
+Icon-Name=x-office-document
+Selection=any
+Extensions=pdf;
+Quote=double
+EscapeSpaces=true

@@ -1,4 +1,15 @@
+<p align="center">
+  <img src="pdf-ocr-icon.svg" alt="PDF-OCR-Converter logo" width="96" height="96">
+</p>
+
 # PDF-OCR-Converter
+
+![platform](https://img.shields.io/badge/platform-Linux%20%7C%20Windows-blue)
+![language](https://img.shields.io/badge/language-Python%203.10%2B-yellow)
+![file-manager](https://img.shields.io/badge/file--manager-Nemo%20%7C%20Explorer-orange)
+![OCR](https://img.shields.io/badge/OCR-Adobe%20PDF%20Services-red)
+![license](https://img.shields.io/badge/license-GPL%20v3-blue)
+![Stars](https://img.shields.io/github/stars/robitschmatthias-ui/PDF-OCR-Converter?style=social)
 
 > 🇩🇪 **Deutsche Version:** siehe [README.de.md](README.de.md)
 
