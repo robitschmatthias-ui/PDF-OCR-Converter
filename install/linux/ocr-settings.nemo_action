@@ -2,6 +2,6 @@
 Name=OCR Settings
 Comment=Configure Adobe PDF Services credentials
 Exec=<HOME_SCRIPTS/pdf-ocr-converter/install/linux/setup_credentials.sh>
-Icon-Name=preferences-system
+Icon-Name=<HOME_SCRIPTS/pdf-ocr-converter/pdf-ocr-icon.svg
 Selection=any
 Extensions=pdf;
