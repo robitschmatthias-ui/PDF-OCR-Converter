@@ -1,11 +1,13 @@
 #!/usr/bin/env bash
 # Installer for PDF-OCR-Converter (Linux / Nemo)
 #
-# - Creates a Python venv in the project dir
-# - Installs dependencies from requirements.txt
-# - Copies .nemo_action files to ~/.local/share/nemo/actions/
-# - Replaces the <HOME_SCRIPTS/...> placeholder with the actual install path
-# - Makes wrapper scripts executable
+# Fully self-contained:
+#   - Checks required system packages and installs them via apt if missing
+#     (asks for sudo password once)
+#   - Detects and repairs a broken .venv from a previous failed run
+#   - Creates a Python venv and installs Python dependencies
+#   - Installs .nemo_action files to ~/.local/share/nemo/actions/
+#   - Launches the credential setup dialog on first install
 #
 # Usage: bash install/linux/install.sh
 
@@ -22,45 +24,65 @@ echo "Nemo actions:  ${NEMO_ACTIONS_DIR}"
 echo
 
 # --- Preflight: required system packages ---
-check_system_packages() {
+install_system_packages() {
     local missing=()
 
-    # python3
     if ! command -v python3 >/dev/null 2>&1; then
         missing+=("python3")
     fi
 
-    # python3-venv (ensurepip must be available)
     if ! python3 -c "import ensurepip" >/dev/null 2>&1; then
         local py_ver
         py_ver="$(python3 -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")' 2>/dev/null || echo "3")"
         missing+=("python${py_ver}-venv")
     fi
 
-    # tkinter (needed for GUI dialogs)
     if ! python3 -c "import tkinter" >/dev/null 2>&1; then
         missing+=("python3-tk")
     fi
 
-    if [ ${#missing[@]} -gt 0 ]; then
-        echo "✗ Missing system packages: ${missing[*]}"
-        echo
-        echo "Please install them first:"
-        echo "  sudo apt install ${missing[*]}"
-        echo
-        echo "Then re-run: bash install/linux/install.sh"
+    if [ ${#missing[@]} -eq 0 ]; then
+        return 0
+    fi
+
+    echo "→ Missing system packages: ${missing[*]}"
+    if ! command -v apt >/dev/null 2>&1; then
+        echo "✗ This installer uses 'apt' to install system packages."
+        echo "  Please install these packages manually: ${missing[*]}"
         exit 1
     fi
-}
-check_system_packages
 
-# --- Python venv ---
-if [ ! -d "${PROJECT_DIR}/.venv" ]; then
-    echo "→ Creating Python venv..."
-    python3 -m venv "${PROJECT_DIR}/.venv"
+    echo "→ Installing via apt (sudo password may be required)..."
+    sudo apt update
+    sudo apt install -y "${missing[@]}"
+
+    # Verify after install
+    for pkg in "${missing[@]}"; do
+        case "$pkg" in
+            python3-tk)
+                python3 -c "import tkinter" >/dev/null 2>&1 || { echo "✗ tkinter still missing after install"; exit 1; } ;;
+            python*-venv)
+                python3 -c "import ensurepip" >/dev/null 2>&1 || { echo "✗ venv still missing after install"; exit 1; } ;;
+        esac
+    done
+    echo "✓ System packages installed."
+}
+install_system_packages
+
+# --- Python venv (repair broken venv from previous failed run) ---
+VENV_DIR="${PROJECT_DIR}/.venv"
+if [ -d "${VENV_DIR}" ] && [ ! -f "${VENV_DIR}/bin/activate" ]; then
+    echo "→ Removing broken venv from previous run..."
+    rm -rf "${VENV_DIR}"
 fi
+
+if [ ! -d "${VENV_DIR}" ]; then
+    echo "→ Creating Python venv..."
+    python3 -m venv "${VENV_DIR}"
+fi
+
 # shellcheck disable=SC1091
-source "${PROJECT_DIR}/.venv/bin/activate"
+source "${VENV_DIR}/bin/activate"
 echo "→ Installing Python dependencies..."
 pip install --quiet --upgrade pip
 pip install --quiet -r "${PROJECT_DIR}/requirements.txt"
