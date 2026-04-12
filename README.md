@@ -40,7 +40,9 @@ inherits the name of the **first** file in the selection.
 
 ## Getting Adobe API credentials
 
-You need a free Adobe Developer account (free tier: 500 transactions/month).
+You need a free Adobe Developer account.
+**Free tier: 500 transactions/month** — each OCR conversion uses 2 transactions
+(OCR + DOCX export), so you can process **~250 files per month** for free.
 
 1. Go to <https://developer.adobe.com/console> and sign in (or sign up — free).
 2. Click **Create new project**.
