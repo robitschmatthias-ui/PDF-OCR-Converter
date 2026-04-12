@@ -96,7 +96,7 @@ mkdir -p "${NEMO_ACTIONS_DIR}"
 for action in "${SCRIPT_DIR}"/*.nemo_action; do
     dest="${NEMO_ACTIONS_DIR}/$(basename "${action}")"
     echo "→ Installing $(basename "${action}")"
-    sed "s|<HOME_SCRIPTS/pdf-ocr-converter|${PROJECT_DIR}|g" "${action}" > "${dest}"
+    sed "s|__PROJECT_DIR__|${PROJECT_DIR}|g" "${action}" > "${dest}"
 done
 
 echo
