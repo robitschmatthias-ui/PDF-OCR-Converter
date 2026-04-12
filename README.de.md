@@ -40,7 +40,9 @@ Von Adobe zurückkommende Dateien erhalten immer das Suffix `_OCR`, z.B.
 
 ## Adobe API-Zugangsdaten besorgen
 
-Du brauchst einen kostenlosen Adobe Developer Account (Free-Tier: 500 Transaktionen/Monat).
+Du brauchst einen kostenlosen Adobe Developer Account.
+**Free-Tier: 500 Transaktionen/Monat** — jede OCR-Konvertierung verbraucht 2 Transaktionen
+(OCR + DOCX-Export), damit lassen sich **~250 Dateien pro Monat** kostenlos verarbeiten.
 
 1. Öffne <https://developer.adobe.com/console> und melde dich an (oder registriere dich – kostenlos).
 2. Klicke auf **Create new project**.

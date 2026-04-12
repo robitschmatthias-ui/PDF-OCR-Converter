@@ -21,6 +21,39 @@ echo "Project dir:   ${PROJECT_DIR}"
 echo "Nemo actions:  ${NEMO_ACTIONS_DIR}"
 echo
 
+# --- Preflight: required system packages ---
+check_system_packages() {
+    local missing=()
+
+    # python3
+    if ! command -v python3 >/dev/null 2>&1; then
+        missing+=("python3")
+    fi
+
+    # python3-venv (ensurepip must be available)
+    if ! python3 -c "import ensurepip" >/dev/null 2>&1; then
+        local py_ver
+        py_ver="$(python3 -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")' 2>/dev/null || echo "3")"
+        missing+=("python${py_ver}-venv")
+    fi
+
+    # tkinter (needed for GUI dialogs)
+    if ! python3 -c "import tkinter" >/dev/null 2>&1; then
+        missing+=("python3-tk")
+    fi
+
+    if [ ${#missing[@]} -gt 0 ]; then
+        echo "✗ Missing system packages: ${missing[*]}"
+        echo
+        echo "Please install them first:"
+        echo "  sudo apt install ${missing[*]}"
+        echo
+        echo "Then re-run: bash install/linux/install.sh"
+        exit 1
+    fi
+}
+check_system_packages
+
 # --- Python venv ---
 if [ ! -d "${PROJECT_DIR}/.venv" ]; then
     echo "→ Creating Python venv..."
