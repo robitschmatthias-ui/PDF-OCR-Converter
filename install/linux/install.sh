@@ -41,6 +41,11 @@ install_system_packages() {
         missing+=("python3-tk")
     fi
 
+    # python3-dbus (needed for reliable desktop notifications via plyer)
+    if ! dpkg -s python3-dbus >/dev/null 2>&1; then
+        missing+=("python3-dbus")
+    fi
+
     if [ ${#missing[@]} -eq 0 ]; then
         return 0
     fi
