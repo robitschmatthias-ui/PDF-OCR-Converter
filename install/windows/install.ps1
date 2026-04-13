@@ -28,18 +28,26 @@ Write-Host "Project dir: $ProjectDir"
 Write-Host ""
 
 # --- Preflight: Python 3.10+ ---
+# Try 'python' first; fall back to the 'py' launcher which is more reliable
+# immediately after a fresh winget install.
+$Script:PythonCmd = $null
+
 function Test-PythonOk {
-    $py = Get-Command python -ErrorAction SilentlyContinue
-    if (-not $py) { return $false }
-    try {
-        $ver = & python -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')"
-        $parts = $ver.Split('.')
-        $major = [int]$parts[0]
-        $minor = [int]$parts[1]
-        return ($major -gt 3) -or ($major -eq 3 -and $minor -ge 10)
-    } catch {
-        return $false
+    foreach ($candidate in @(@("python"), @("py", "-3"))) {
+        $cmd = Get-Command $candidate[0] -ErrorAction SilentlyContinue
+        if (-not $cmd) { continue }
+        try {
+            $ver = & $candidate[0] $candidate[1..($candidate.Length-1)] -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')" 2>$null
+            $parts = $ver.Split('.')
+            $major = [int]$parts[0]
+            $minor = [int]$parts[1]
+            if (($major -gt 3) -or ($major -eq 3 -and $minor -ge 10)) {
+                $Script:PythonCmd = $candidate
+                return $true
+            }
+        } catch { }
     }
+    return $false
 }
 
 if (-not (Test-PythonOk)) {
@@ -70,7 +78,7 @@ if ((Test-Path $VenvDir) -and -not (Test-Path $PythonExe)) {
 }
 if (-not (Test-Path $VenvDir)) {
     Write-Host "-> Creating Python venv..."
-    python -m venv $VenvDir
+    & $Script:PythonCmd[0] $Script:PythonCmd[1..($Script:PythonCmd.Length-1)] -m venv $VenvDir
 }
 
 Write-Host "-> Installing Python dependencies..."

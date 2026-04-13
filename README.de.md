@@ -77,8 +77,13 @@ diese werden unter `~/.config/pdf-ocr-converter/.env` gespeichert.
 ```powershell
 git clone https://github.com/robitschmatthias-ui/PDF-OCR-Converter.git $env:LOCALAPPDATA\pdf-ocr-converter
 cd $env:LOCALAPPDATA\pdf-ocr-converter
-install\windows\install.ps1
+install\windows\install.bat
 ```
+
+Der `.bat`-Wrapper umgeht die PowerShell-Execution-Policy automatisch.
+Python wird bei Bedarf per `winget` installiert. Falls Python nach einer frischen
+Installation nicht erkannt wird: PowerShell schließen, eine neue Session öffnen
+und den Installer erneut starten.
 
 ## Nutzung
 
@@ -109,3 +114,9 @@ GPL-3.0 – siehe [LICENSE](LICENSE).
 
 Aufbauend auf dem [Adobe PDF Services Python SDK](https://github.com/adobe/pdfservices-python-sdk-samples)
 und inspiriert von [Linux-PDF-Merge-in-Nemo](https://github.com/robitschmatthias-ui/Linux-PDF-Merge-in-Nemo).
+
+---
+
+> 🤖 **Vibe-Coding:** Dieses Projekt ist in einer Dialog-Session mit einer KI
+> entstanden — Design, Code, Installer und Doku wurden iterativ im Gespräch
+> generiert.

@@ -21,7 +21,7 @@ from pathlib import Path
 
 from pypdf import PdfWriter
 
-from config import load_config, CredentialsMissingError
+from config import load_config, CredentialsMissingError, setup_logging
 from ocr_convert import (
     _build_services,
     _choose_locale,
@@ -106,4 +106,5 @@ if __name__ == "__main__":
         level=logging.INFO,
         format="%(asctime)s %(levelname)s %(message)s",
     )
+    setup_logging()
     sys.exit(main(sys.argv))
