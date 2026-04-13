@@ -29,6 +29,30 @@ def config_file() -> Path:
     return config_dir() / ".env"
 
 
+def log_file() -> Path:
+    return config_dir() / "ocr.log"
+
+
+def setup_logging() -> None:
+    """Attach a file handler so errors are visible even under pythonw.exe (Windows).
+
+    Log rotates at 1 MB; 3 backups kept. Never writes credentials.
+    """
+    import logging
+    from logging.handlers import RotatingFileHandler
+
+    path = log_file()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    handler = RotatingFileHandler(path, maxBytes=1_000_000, backupCount=3, encoding="utf-8")
+    handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(name)s: %(message)s"))
+    root = logging.getLogger()
+    root.setLevel(logging.INFO)
+    # Avoid duplicate handlers if called twice
+    if not any(isinstance(h, RotatingFileHandler) and getattr(h, "baseFilename", "") == str(path)
+               for h in root.handlers):
+        root.addHandler(handler)
+
+
 @dataclass(frozen=True)
 class Config:
     client_id: str

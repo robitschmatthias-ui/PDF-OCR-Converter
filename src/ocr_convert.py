@@ -18,7 +18,7 @@ import os
 import sys
 from pathlib import Path
 
-from config import load_config, CredentialsMissingError
+from config import load_config, CredentialsMissingError, setup_logging
 
 logger = logging.getLogger("pdf-ocr-converter")
 
@@ -184,4 +184,5 @@ if __name__ == "__main__":
         level=logging.INFO,
         format="%(asctime)s %(levelname)s %(message)s",
     )
+    setup_logging()
     sys.exit(main(sys.argv))
