@@ -89,13 +89,11 @@ def _build_services(client_id: str, client_secret: str):
 
 
 def _ocr_then_export(pdf_services, input_pdf: Path, locale: str) -> bytes:
-    from adobe.pdfservices.operation.io.cloud_asset import CloudAsset
-    from adobe.pdfservices.operation.io.stream_asset import StreamAsset
     from adobe.pdfservices.operation.pdf_services_media_type import PDFServicesMediaType
-    from adobe.pdfservices.operation.pdfjobs.jobs.ocr_job import OCRJob
+    from adobe.pdfservices.operation.pdfjobs.jobs.ocr_pdf_job import OCRPDFJob
     from adobe.pdfservices.operation.pdfjobs.jobs.export_pdf_job import ExportPDFJob
-    from adobe.pdfservices.operation.pdfjobs.params.ocr.ocr_params import OCRParams
-    from adobe.pdfservices.operation.pdfjobs.params.ocr.ocr_supported_locale import (
+    from adobe.pdfservices.operation.pdfjobs.params.ocr_pdf.ocr_params import OCRParams
+    from adobe.pdfservices.operation.pdfjobs.params.ocr_pdf.ocr_supported_locale import (
         OCRSupportedLocale,
     )
     from adobe.pdfservices.operation.pdfjobs.params.export_pdf.export_pdf_params import (
@@ -104,7 +102,7 @@ def _ocr_then_export(pdf_services, input_pdf: Path, locale: str) -> bytes:
     from adobe.pdfservices.operation.pdfjobs.params.export_pdf.export_pdf_target_format import (
         ExportPDFTargetFormat,
     )
-    from adobe.pdfservices.operation.pdfjobs.result.ocr_result import OCRResult
+    from adobe.pdfservices.operation.pdfjobs.result.ocr_pdf_result import OCRPDFResult
     from adobe.pdfservices.operation.pdfjobs.result.export_pdf_result import ExportPDFResult
 
     with open(input_pdf, "rb") as f:
@@ -117,19 +115,19 @@ def _ocr_then_export(pdf_services, input_pdf: Path, locale: str) -> bytes:
     # 1) OCR
     locale_enum = _locale_to_enum(locale, OCRSupportedLocale)
     ocr_params = OCRParams(ocr_locale=locale_enum)
-    ocr_job = OCRJob(input_asset=input_asset, ocr_params=ocr_params)
+    ocr_job = OCRPDFJob(input_asset=input_asset, ocr_pdf_params=ocr_params)
     ocr_location = pdf_services.submit(ocr_job)
-    ocr_response = pdf_services.get_job_result(ocr_location, OCRResult)
-    ocr_asset: CloudAsset = ocr_response.get_result().get_asset()
+    ocr_response = pdf_services.get_job_result(ocr_location, OCRPDFResult)
+    ocr_asset = ocr_response.get_result().get_asset()
 
     # 2) Export to DOCX
     export_params = ExportPDFParams(target_format=ExportPDFTargetFormat.DOCX)
     export_job = ExportPDFJob(input_asset=ocr_asset, export_pdf_params=export_params)
     export_location = pdf_services.submit(export_job)
     export_response = pdf_services.get_job_result(export_location, ExportPDFResult)
-    result_asset: CloudAsset = export_response.get_result().get_asset()
+    result_asset = export_response.get_result().get_asset()
 
-    stream_asset: StreamAsset = pdf_services.get_content(result_asset)
+    stream_asset = pdf_services.get_content(result_asset)
     return stream_asset.get_input_stream()
 
 

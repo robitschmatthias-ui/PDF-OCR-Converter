@@ -21,9 +21,14 @@ from config import config_dir, config_file, load_config, CredentialsMissingError
 
 
 SUPPORTED_LOCALES = [
-    "de-de", "en-us", "fr-fr", "it-it", "es-es", "nl-nl",
-    "da-dk", "fi-fi", "nb-no", "sv-se", "pt-br",
-    "ja-jp", "ko-kr", "zh-cn", "zh-tw",
+    "de-de", "de-ch", "en-us", "en-gb",
+    "fr-fr", "it-it", "es-es", "nl-nl", "pt-br",
+    "da-dk", "fi-fi", "nb-no", "sv-se",
+    "cs-cz", "pl-pl", "hu-hu", "ro-ro", "sk-sk", "sl-si", "hr-hr",
+    "bg-bg", "el-gr", "et-ee", "lt-lt", "lv-lv", "mk-mk", "mt-mt",
+    "ru-ru", "tr-tr", "uk-ua",
+    "ja-jp", "ko-kr", "zh-cn", "zh-hk",
+    "iw-il",
 ]
 
 
