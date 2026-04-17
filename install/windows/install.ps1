@@ -28,14 +28,16 @@ Write-Host "Project dir: $ProjectDir"
 Write-Host ""
 
 # --- Preflight: Python 3.10+ ---
-# Try 'python' first; fall back to the 'py' launcher which is more reliable
-# immediately after a fresh winget install.
+# Prefer the 'py' launcher (more reliable post-winget). Skip the Microsoft
+# Store stub at WindowsApps\python.exe — calling it with -c hangs the shell
+# while the Store opens in a background window.
 $Script:PythonCmd = $null
 
 function Test-PythonOk {
-    foreach ($candidate in @(@("python"), @("py", "-3"))) {
+    foreach ($candidate in @(@("py", "-3"), @("python"))) {
         $cmd = Get-Command $candidate[0] -ErrorAction SilentlyContinue
         if (-not $cmd) { continue }
+        if ($cmd.Source -and $cmd.Source -like "*\WindowsApps\*") { continue }
         try {
             $ver = & $candidate[0] $candidate[1..($candidate.Length-1)] -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')" 2>$null
             $parts = $ver.Split('.')
@@ -88,6 +90,7 @@ Write-Host "-> Installing Python dependencies..."
 # --- Register context menu entries ---
 $OcrScript = Join-Path $ProjectDir "src\ocr_convert.py"
 $SettingsScript = Join-Path $ProjectDir "src\setup_credentials.py"
+$IconFile = Join-Path $ProjectDir "pdf-ocr-icon.ico"
 
 $OcrCmd      = "`"$PythonwExe`" `"$OcrScript`" `"%1`""
 $SettingsCmd = "`"$PythonwExe`" `"$SettingsScript`""
@@ -96,10 +99,12 @@ $RegRoot = "HKCU:\Software\Classes\SystemFileAssociations\.pdf\shell"
 
 New-Item -Path "$RegRoot\OCR to DOCX\command"  -Force | Out-Null
 Set-ItemProperty -Path "$RegRoot\OCR to DOCX"            -Name "(default)" -Value "OCR to DOCX"
+Set-ItemProperty -Path "$RegRoot\OCR to DOCX"            -Name "Icon"      -Value $IconFile
 Set-ItemProperty -Path "$RegRoot\OCR to DOCX\command"    -Name "(default)" -Value $OcrCmd
 
 New-Item -Path "$RegRoot\OCR Settings\command" -Force | Out-Null
 Set-ItemProperty -Path "$RegRoot\OCR Settings"           -Name "(default)" -Value "OCR Settings"
+Set-ItemProperty -Path "$RegRoot\OCR Settings"           -Name "Icon"      -Value $IconFile
 Set-ItemProperty -Path "$RegRoot\OCR Settings\command"   -Name "(default)" -Value $SettingsCmd
 
 Write-Host "-> Context menu entries registered."
