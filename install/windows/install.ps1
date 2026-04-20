@@ -55,8 +55,21 @@ function Invoke-Step {
     $proc.WaitForExit()
 
     if ($proc.ExitCode -ne 0) {
-        Write-Host "`r[X] $Label                              "
-        Get-Content $errFile | ForEach-Object { Write-Host "    $_" }
+        Write-Host "`r[X] $Label (Exit $($proc.ExitCode))                         "
+        $stdout = Get-Content $outFile -Raw -ErrorAction SilentlyContinue
+        $stderr = Get-Content $errFile -Raw -ErrorAction SilentlyContinue
+        if ($stderr) {
+            Write-Host "    --- stderr ---"
+            $stderr.TrimEnd() -split "`r?`n" | ForEach-Object { Write-Host "    $_" }
+        }
+        if ($stdout) {
+            Write-Host "    --- stdout ---"
+            $stdout.TrimEnd() -split "`r?`n" | ForEach-Object { Write-Host "    $_" }
+        }
+        if (-not $stderr -and -not $stdout) {
+            Write-Host "    (keine Ausgabe)"
+            Write-Host "    Befehl: $Exe $($Arguments -join ' ')"
+        }
         Remove-Item $outFile, $errFile -Force -ErrorAction SilentlyContinue
         exit 1
     }
@@ -159,9 +172,18 @@ if (Test-PythonOk) {
 }
 
 # --- Python venv ---
-if ((Test-Path $VenvDir) -and -not (Test-Path $PythonExe)) {
-    Write-Host "[>] Defektes venv aus vorherigem Lauf wird entfernt..."
-    Remove-Item -Recurse -Force $VenvDir
+# Consider the venv broken if python.exe is missing OR can't run a trivial command
+# (covers venvs from aborted earlier runs that point to a now-invalid base Python).
+if (Test-Path $VenvDir) {
+    $venvOk = $false
+    if (Test-Path $PythonExe) {
+        & $PythonExe -c "import sys" 2>$null | Out-Null
+        if ($LASTEXITCODE -eq 0) { $venvOk = $true }
+    }
+    if (-not $venvOk) {
+        Write-Host "[>] Defektes venv aus vorherigem Lauf wird entfernt..."
+        Remove-Item -Recurse -Force $VenvDir
+    }
 }
 
 if (-not (Test-Path $VenvDir)) {
