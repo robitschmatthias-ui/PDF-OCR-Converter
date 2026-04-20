@@ -69,21 +69,55 @@ function Invoke-Step {
 # which hangs the shell while opening the Store in a hidden background window.
 $Script:PythonCmd = $null
 
+function Test-PythonVersion {
+    param([string]$Exe, [string[]]$PreArgs = @())
+    try {
+        $allArgs = $PreArgs + @("-c", "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')")
+        $ver = & $Exe @allArgs 2>$null
+        if (-not $ver) { return $false }
+        $parts = $ver.ToString().Trim().Split('.')
+        $major = [int]$parts[0]
+        $minor = [int]$parts[1]
+        return (($major -gt 3) -or ($major -eq 3 -and $minor -ge 10))
+    } catch {
+        return $false
+    }
+}
+
 function Test-PythonOk {
-    foreach ($candidate in @(@("py", "-3"), @("python"))) {
-        $cmd = Get-Command $candidate[0] -ErrorAction SilentlyContinue
+    # 1) Try PATH commands (skip WindowsApps stub)
+    $candidates = @(
+        @{ Exe = "py";      PreArgs = @("-3") },
+        @{ Exe = "python";  PreArgs = @() },
+        @{ Exe = "python3"; PreArgs = @() }
+    )
+    foreach ($c in $candidates) {
+        $cmd = Get-Command $c.Exe -ErrorAction SilentlyContinue
         if (-not $cmd) { continue }
         if ($cmd.Source -and $cmd.Source -like "*\WindowsApps\*") { continue }
-        try {
-            $ver = & $candidate[0] $candidate[1..($candidate.Length-1)] -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')" 2>$null
-            $parts = $ver.Split('.')
-            $major = [int]$parts[0]
-            $minor = [int]$parts[1]
-            if (($major -gt 3) -or ($major -eq 3 -and $minor -ge 10)) {
-                $Script:PythonCmd = $candidate
-                return $true
-            }
-        } catch { }
+        if (Test-PythonVersion -Exe $c.Exe -PreArgs $c.PreArgs) {
+            $Script:PythonCmd = @($c.Exe) + $c.PreArgs
+            return $true
+        }
+    }
+    # 2) Fallback: scan standard install locations (covers cases where winget
+    #    installed Python but PATH wasn't picked up by the shell)
+    $paths = @(
+        "$env:LocalAppData\Programs\Python\Python312\python.exe",
+        "$env:LocalAppData\Programs\Python\Python311\python.exe",
+        "$env:LocalAppData\Programs\Python\Python310\python.exe",
+        "$env:ProgramFiles\Python312\python.exe",
+        "$env:ProgramFiles\Python311\python.exe",
+        "$env:ProgramFiles\Python310\python.exe",
+        "$env:ProgramFiles(x86)\Python312\python.exe",
+        "$env:ProgramFiles(x86)\Python311\python.exe",
+        "$env:ProgramFiles(x86)\Python310\python.exe"
+    )
+    foreach ($p in $paths) {
+        if ((Test-Path $p) -and (Test-PythonVersion -Exe $p)) {
+            $Script:PythonCmd = @($p)
+            return $true
+        }
     }
     return $false
 }
@@ -91,6 +125,18 @@ function Test-PythonOk {
 if (Test-PythonOk) {
     Write-Host "[+] Python gefunden ($($Script:PythonCmd -join ' '))"
 } else {
+    # Guard against infinite relaunch loops if Python still can't be detected
+    # after winget already reported a successful install.
+    if ($env:PDF_OCR_INSTALLER_RELAUNCHED -eq "1") {
+        Write-Host "[X] Python wurde installiert, wird aber immer noch nicht gefunden."
+        Write-Host "    Bitte in einer neuen PowerShell manuell pruefen:"
+        Write-Host "      py --version    (bzw. python --version)"
+        Write-Host "    Falls nichts funktioniert, Python manuell installieren:"
+        Write-Host "      https://www.python.org/downloads/"
+        Write-Host "    WICHTIG: 'Add Python to PATH' aktivieren."
+        exit 1
+    }
+
     Write-Host "[>] Python 3.10+ nicht gefunden. Installation via winget..."
     $winget = Get-Command winget -ErrorAction SilentlyContinue
     if (-not $winget) {
@@ -101,6 +147,12 @@ if (Test-PythonOk) {
     }
     Write-Host "    (Das kann eine Minute dauern - winget laedt Python herunter...)"
     winget install --id Python.Python.3.12 -e --silent --accept-package-agreements --accept-source-agreements
+
+    # Pull fresh system PATH into this process so the relaunched child inherits it
+    $env:Path = [System.Environment]::GetEnvironmentVariable("Path", "Machine") + ";" +
+                [System.Environment]::GetEnvironmentVariable("Path", "User")
+    $env:PDF_OCR_INSTALLER_RELAUNCHED = "1"
+
     Write-Host "[+] Python installiert. Installer wird in neuer Session fortgesetzt..."
     Start-Process powershell -ArgumentList "-NoProfile -ExecutionPolicy Bypass -File `"$PSCommandPath`"" -Wait
     exit 0
