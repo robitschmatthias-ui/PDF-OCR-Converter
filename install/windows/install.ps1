@@ -1,4 +1,4 @@
-# PDF-OCR-Converter — Windows installer
+# PDF-OCR-Converter - Windows installer
 #
 # Fully self-contained:
 #   - Checks for Python 3.10+ and installs it via winget if missing
@@ -94,12 +94,12 @@ if (Test-PythonOk) {
     Write-Host "[>] Python 3.10+ nicht gefunden. Installation via winget..."
     $winget = Get-Command winget -ErrorAction SilentlyContinue
     if (-not $winget) {
-        Write-Host "[X] winget nicht verfügbar."
+        Write-Host "[X] winget nicht verfuegbar."
         Write-Host "    Bitte Python 3.10+ manuell installieren: https://www.python.org/downloads/"
         Write-Host "    WICHTIG: 'Add Python to PATH' aktivieren."
         exit 1
     }
-    Write-Host "    (Das kann eine Minute dauern — winget lädt Python herunter...)"
+    Write-Host "    (Das kann eine Minute dauern - winget laedt Python herunter...)"
     winget install --id Python.Python.3.12 -e --silent --accept-package-agreements --accept-source-agreements
     Write-Host "[+] Python installiert. Installer wird in neuer Session fortgesetzt..."
     Start-Process powershell -ArgumentList "-NoProfile -ExecutionPolicy Bypass -File `"$PSCommandPath`"" -Wait
