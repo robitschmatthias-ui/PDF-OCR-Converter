@@ -8,6 +8,7 @@
 #       * OCR to DOCX
 #       * OCR Settings
 #   - Launches the credential setup dialog on first install
+#   - Shows a live spinner during long-running steps
 #
 # Note: "Merge & OCR to DOCX" is Linux/Nemo-only. On Windows, multi-selection
 # via Explorer triggers "OCR to DOCX" individually per file.
@@ -17,20 +18,55 @@
 
 $ErrorActionPreference = "Stop"
 
-$ProjectDir = (Resolve-Path "$PSScriptRoot\..\..").Path
-$VenvDir = Join-Path $ProjectDir ".venv"
-$PythonExe = Join-Path $VenvDir "Scripts\python.exe"
-$PythonwExe = Join-Path $VenvDir "Scripts\pythonw.exe"
+$ProjectDir       = (Resolve-Path "$PSScriptRoot\..\..").Path
+$VenvDir          = Join-Path $ProjectDir ".venv"
+$PythonExe        = Join-Path $VenvDir "Scripts\python.exe"
+$PythonwExe       = Join-Path $VenvDir "Scripts\pythonw.exe"
+$RequirementsFile = Join-Path $ProjectDir "requirements.txt"
 
 Write-Host "PDF-OCR-Converter Installer (Windows)"
 Write-Host "======================================"
-Write-Host "Project dir: $ProjectDir"
+Write-Host "Projektverzeichnis: $ProjectDir"
 Write-Host ""
 
+# --- Spinner helper ---
+# Runs $Exe with $Arguments, animates a spinner while the process runs,
+# and exits the installer with an error message if the process fails.
+function Invoke-Step {
+    param(
+        [string]   $Label,
+        [string]   $Exe,
+        [string[]] $Arguments = @()
+    )
+    $frames  = @('/', '-', '\', '|')
+    $outFile = [System.IO.Path]::GetTempFileName()
+    $errFile = [System.IO.Path]::GetTempFileName()
+
+    $proc = Start-Process -FilePath $Exe -ArgumentList $Arguments `
+        -RedirectStandardOutput $outFile -RedirectStandardError $errFile `
+        -NoNewWindow -PassThru
+
+    $i = 0
+    while (-not $proc.HasExited) {
+        Write-Host -NoNewline "`r[$($frames[$i % 4])] $Label ..."
+        $i++
+        Start-Sleep -Milliseconds 120
+    }
+    $proc.WaitForExit()
+
+    if ($proc.ExitCode -ne 0) {
+        Write-Host "`r[X] $Label                              "
+        Get-Content $errFile | ForEach-Object { Write-Host "    $_" }
+        Remove-Item $outFile, $errFile -Force -ErrorAction SilentlyContinue
+        exit 1
+    }
+    Write-Host "`r[+] $Label                              "
+    Remove-Item $outFile, $errFile -Force -ErrorAction SilentlyContinue
+}
+
 # --- Preflight: Python 3.10+ ---
-# Prefer the 'py' launcher (more reliable post-winget). Skip the Microsoft
-# Store stub at WindowsApps\python.exe — calling it with -c hangs the shell
-# while the Store opens in a background window.
+# Prefer the 'py' launcher; skip the Microsoft Store stub at WindowsApps\python.exe
+# which hangs the shell while opening the Store in a hidden background window.
 $Script:PythonCmd = $null
 
 function Test-PythonOk {
@@ -52,71 +88,76 @@ function Test-PythonOk {
     return $false
 }
 
-if (-not (Test-PythonOk)) {
-    Write-Host "-> Python 3.10+ not found. Attempting install via winget..."
+if (Test-PythonOk) {
+    Write-Host "[+] Python gefunden ($($Script:PythonCmd -join ' '))"
+} else {
+    Write-Host "[>] Python 3.10+ nicht gefunden. Installation via winget..."
     $winget = Get-Command winget -ErrorAction SilentlyContinue
     if (-not $winget) {
-        Write-Host "X winget is not available."
-        Write-Host "  Please install Python 3.10+ manually from https://www.python.org/downloads/"
-        Write-Host "  IMPORTANT: enable 'Add Python to PATH' during installation."
+        Write-Host "[X] winget nicht verfügbar."
+        Write-Host "    Bitte Python 3.10+ manuell installieren: https://www.python.org/downloads/"
+        Write-Host "    WICHTIG: 'Add Python to PATH' aktivieren."
         exit 1
     }
+    Write-Host "    (Das kann eine Minute dauern — winget lädt Python herunter...)"
     winget install --id Python.Python.3.12 -e --silent --accept-package-agreements --accept-source-agreements
-    # Refresh PATH for current session
-    $env:Path = [System.Environment]::GetEnvironmentVariable("Path", "Machine") + ";" +
-                [System.Environment]::GetEnvironmentVariable("Path", "User")
-    if (-not (Test-PythonOk)) {
-        Write-Host "X Python still not detected after winget install."
-        Write-Host "  Please close this PowerShell, open a new one, and re-run the installer."
-        exit 1
-    }
-    Write-Host "OK Python installed."
+    Write-Host "[+] Python installiert. Installer wird in neuer Session fortgesetzt..."
+    Start-Process powershell -ArgumentList "-NoProfile -ExecutionPolicy Bypass -File `"$PSCommandPath`"" -Wait
+    exit 0
 }
 
-# --- Python venv (repair broken venv from previous failed run) ---
+# --- Python venv ---
 if ((Test-Path $VenvDir) -and -not (Test-Path $PythonExe)) {
-    Write-Host "-> Removing broken venv from previous run..."
+    Write-Host "[>] Defektes venv aus vorherigem Lauf wird entfernt..."
     Remove-Item -Recurse -Force $VenvDir
 }
+
 if (-not (Test-Path $VenvDir)) {
-    Write-Host "-> Creating Python venv..."
-    & $Script:PythonCmd[0] $Script:PythonCmd[1..($Script:PythonCmd.Length-1)] -m venv $VenvDir
+    $pyExec = $Script:PythonCmd[0]
+    $pyArgs = if ($Script:PythonCmd.Length -gt 1) {
+        $Script:PythonCmd[1..($Script:PythonCmd.Length - 1)] + @("-m", "venv", $VenvDir)
+    } else {
+        @("-m", "venv", $VenvDir)
+    }
+    Invoke-Step "Python venv wird erstellt" $pyExec $pyArgs
+} else {
+    Write-Host "[+] Python venv vorhanden"
 }
 
-Write-Host "-> Installing Python dependencies..."
-& $PythonExe -m pip install --quiet --upgrade pip
-& $PythonExe -m pip install --quiet -r (Join-Path $ProjectDir "requirements.txt")
+Invoke-Step "pip wird aktualisiert" `
+    $PythonExe @("-m", "pip", "install", "--quiet", "--upgrade", "pip")
+
+Invoke-Step "Python-Abhaengigkeiten werden installiert (kann einen Moment dauern)" `
+    $PythonExe @("-m", "pip", "install", "--quiet", "-r", $RequirementsFile)
 
 # --- Register context menu entries ---
-$OcrScript = Join-Path $ProjectDir "src\ocr_convert.py"
+$OcrScript      = Join-Path $ProjectDir "src\ocr_convert.py"
 $SettingsScript = Join-Path $ProjectDir "src\setup_credentials.py"
-$IconFile = Join-Path $ProjectDir "pdf-ocr-icon.ico"
-
-$OcrCmd      = "`"$PythonwExe`" `"$OcrScript`" `"%1`""
-$SettingsCmd = "`"$PythonwExe`" `"$SettingsScript`""
-
-$RegRoot = "HKCU:\Software\Classes\SystemFileAssociations\.pdf\shell"
+$IconFile       = Join-Path $ProjectDir "pdf-ocr-icon.ico"
+$OcrCmd         = "`"$PythonwExe`" `"$OcrScript`" `"%1`""
+$SettingsCmd    = "`"$PythonwExe`" `"$SettingsScript`""
+$RegRoot        = "HKCU:\Software\Classes\SystemFileAssociations\.pdf\shell"
 
 New-Item -Path "$RegRoot\OCR to DOCX\command"  -Force | Out-Null
-Set-ItemProperty -Path "$RegRoot\OCR to DOCX"            -Name "(default)" -Value "OCR to DOCX"
-Set-ItemProperty -Path "$RegRoot\OCR to DOCX"            -Name "Icon"      -Value $IconFile
-Set-ItemProperty -Path "$RegRoot\OCR to DOCX\command"    -Name "(default)" -Value $OcrCmd
+Set-ItemProperty -Path "$RegRoot\OCR to DOCX"          -Name "(default)" -Value "OCR to DOCX"
+Set-ItemProperty -Path "$RegRoot\OCR to DOCX"          -Name "Icon"      -Value $IconFile
+Set-ItemProperty -Path "$RegRoot\OCR to DOCX\command"  -Name "(default)" -Value $OcrCmd
 
 New-Item -Path "$RegRoot\OCR Settings\command" -Force | Out-Null
-Set-ItemProperty -Path "$RegRoot\OCR Settings"           -Name "(default)" -Value "OCR Settings"
-Set-ItemProperty -Path "$RegRoot\OCR Settings"           -Name "Icon"      -Value $IconFile
-Set-ItemProperty -Path "$RegRoot\OCR Settings\command"   -Name "(default)" -Value $SettingsCmd
+Set-ItemProperty -Path "$RegRoot\OCR Settings"         -Name "(default)" -Value "OCR Settings"
+Set-ItemProperty -Path "$RegRoot\OCR Settings"         -Name "Icon"      -Value $IconFile
+Set-ItemProperty -Path "$RegRoot\OCR Settings\command" -Name "(default)" -Value $SettingsCmd
 
-Write-Host "-> Context menu entries registered."
+Write-Host "[+] Kontextmenue-Eintraege registriert"
 
 # --- First-run credential setup ---
 $ConfigFile = Join-Path $env:APPDATA "pdf-ocr-converter\.env"
 if (-not (Test-Path $ConfigFile)) {
-    Write-Host "-> No credentials configured yet. Launching setup dialog..."
+    Write-Host "[>] Noch keine Zugangsdaten konfiguriert. Setup-Dialog wird gestartet..."
     & $PythonExe $SettingsScript
 }
 
 Write-Host ""
-Write-Host "Installation complete."
-Write-Host "Right-click a PDF in Explorer to use 'OCR to DOCX' or 'OCR Settings'."
-Write-Host "(On Windows 11: click 'Show more options' to see the classic menu.)"
+Write-Host "[+] Installation abgeschlossen."
+Write-Host "    Rechtsklick auf eine PDF-Datei > 'OCR to DOCX' oder 'OCR Settings'."
+Write-Host "    (Windows 11: ggf. erst 'Weitere Optionen anzeigen' klicken)"
