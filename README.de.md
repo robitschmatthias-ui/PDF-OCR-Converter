@@ -81,9 +81,9 @@ install\windows\install.bat
 ```
 
 Der `.bat`-Wrapper umgeht die PowerShell-Execution-Policy automatisch.
-Python wird bei Bedarf per `winget` installiert. Falls Python nach einer frischen
-Installation nicht erkannt wird: PowerShell schließen, eine neue Session öffnen
-und den Installer erneut starten.
+Python wird bei Bedarf automatisch per `winget` installiert — der Installer
+startet sich danach in einer neuen Shell neu, kein manueller Eingriff nötig.
+Lange Schritte werden mit einem Live-Spinner angezeigt.
 
 ## Nutzung
 

@@ -81,8 +81,9 @@ install\windows\install.bat
 ```
 
 The `.bat` wrapper handles PowerShell's execution policy automatically.
-Python is installed via `winget` if missing. If Python is not detected after
-a fresh install, close PowerShell, open a new session, and re-run the installer.
+Python is installed automatically via `winget` if missing — the installer
+restarts itself in a new shell to pick up the updated PATH, no manual steps needed.
+A live spinner shows progress during long-running steps.
 
 ## Usage
 
