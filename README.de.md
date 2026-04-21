@@ -63,6 +63,15 @@ Ausführliche Anleitung: [docs/adobe-credentials.md](docs/adobe-credentials.md).
 
 ### Linux (Nemo)
 
+**Voraussetzung: Git** muss installiert sein. Falls du `bash: git: command not found`
+siehst, einmalig:
+
+```bash
+sudo apt install -y git
+```
+
+Anschließend Installation:
+
 ```bash
 git clone https://github.com/robitschmatthias-ui/PDF-OCR-Converter.git ~/scripts/pdf-ocr-converter
 cd ~/scripts/pdf-ocr-converter
