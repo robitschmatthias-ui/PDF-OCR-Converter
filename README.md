@@ -74,6 +74,18 @@ them in `~/.config/pdf-ocr-converter/.env`.
 
 ### Windows (Explorer)
 
+**Prerequisite: Git** must be installed. If PowerShell tells you
+*"git: The term 'git' is not recognized..."*, install it once:
+
+```powershell
+winget install --id Git.Git -e --accept-package-agreements --accept-source-agreements
+```
+
+Then **close PowerShell and open a new window** (the current session does
+not yet know the new Git path).
+
+Then install:
+
 ```powershell
 git clone https://github.com/robitschmatthias-ui/PDF-OCR-Converter.git $env:LOCALAPPDATA\pdf-ocr-converter
 cd $env:LOCALAPPDATA\pdf-ocr-converter
