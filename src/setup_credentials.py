@@ -20,6 +20,44 @@ from pathlib import Path
 from config import config_dir, config_file, load_config, CredentialsMissingError
 
 
+ADOBE_TOKEN_URL = "https://pdf-services.adobe.io/token"
+
+
+def _validate_credentials(client_id: str, client_secret: str) -> tuple[bool, str]:
+    """Verify credentials against Adobe's IMS token endpoint.
+
+    Returns (ok, message). A successful exchange does not consume any
+    PDF Services transactions — it only fetches an access token.
+    """
+    try:
+        import requests
+    except ImportError:
+        return False, "requests library not available — cannot validate."
+    try:
+        resp = requests.post(
+            ADOBE_TOKEN_URL,
+            data={"client_id": client_id, "client_secret": client_secret},
+            timeout=15,
+        )
+    except requests.exceptions.Timeout:
+        return False, "Adobe did not respond within 15 seconds. Check your internet connection."
+    except requests.exceptions.RequestException as exc:
+        return False, f"Network error: {exc}"
+    if resp.status_code == 200 and "access_token" in resp.text:
+        return True, "Credentials are valid."
+    try:
+        body = resp.json()
+        err = body.get("error")
+        if isinstance(err, dict):
+            detail = err.get("message") or err.get("code") or str(err)
+        else:
+            detail = (body.get("error_description") or body.get("message")
+                      or err or body.get("code") or resp.text[:200])
+    except ValueError:
+        detail = resp.text[:200]
+    return False, f"Adobe rejected the credentials (HTTP {resp.status_code}): {detail}"
+
+
 SUPPORTED_LOCALES = [
     "de-de", "de-ch", "en-us", "en-gb",
     "fr-fr", "it-it", "es-es", "nl-nl", "pt-br",
@@ -80,8 +118,18 @@ def run_cli() -> int:
     if not new_id or not new_secret:
         print("ERROR: Client ID and Client Secret are required.", file=sys.stderr)
         return 1
+    print("\nValidating credentials with Adobe...")
+    ok, msg = _validate_credentials(new_id, new_secret)
+    if not ok:
+        print(f"\n✗ {msg}", file=sys.stderr)
+        answer = input("\nSave anyway? [y/N]: ").strip().lower()
+        if answer != "y":
+            print("Aborted. Credentials NOT saved.")
+            return 1
+    else:
+        print(f"\n✓ {msg}")
     path = _write_env(new_id, new_secret, new_locale)
-    print(f"\n✓ Credentials saved to {path}")
+    print(f"✓ Credentials saved to {path}")
     return 0
 
 
@@ -92,13 +140,14 @@ def run_gui() -> int:
     except ImportError:
         print("tkinter not available, falling back to CLI.", file=sys.stderr)
         return run_cli()
+    import threading
 
     client_id, client_secret, locale = _current_values()
     result = {"ok": False}
 
     root = tk.Tk()
     root.title("PDF-OCR-Converter — Settings")
-    root.geometry("520x280")
+    root.geometry("520x320")
 
     frm = ttk.Frame(root, padding=16)
     frm.pack(fill="both", expand=True)
@@ -122,20 +171,69 @@ def run_gui() -> int:
     ttk.Label(frm, text=f"Saved to: {config_file()}",
               foreground="gray").grid(row=4, column=0, columnspan=2, sticky="w", pady=(12, 0))
 
-    btns = ttk.Frame(frm)
-    btns.grid(row=5, column=0, columnspan=2, pady=(16, 0), sticky="e")
+    status_var = tk.StringVar(value="")
+    status_lbl = ttk.Label(frm, textvariable=status_var, foreground="gray", wraplength=480)
+    status_lbl.grid(row=5, column=0, columnspan=2, sticky="w", pady=(8, 0))
 
-    def on_save():
-        if not id_var.get().strip() or not secret_var.get().strip():
+    btns = ttk.Frame(frm)
+    btns.grid(row=6, column=0, columnspan=2, pady=(16, 0), sticky="e")
+
+    def _set_status(text: str, color: str = "gray"):
+        status_var.set(text)
+        status_lbl.configure(foreground=color)
+
+    def _disable_buttons(disabled: bool):
+        state = "disabled" if disabled else "normal"
+        for child in btns.winfo_children():
+            try:
+                child.configure(state=state)
+            except tk.TclError:
+                pass
+
+    def _validate_async(on_done):
+        cid = id_var.get().strip()
+        sec = secret_var.get().strip()
+        if not cid or not sec:
             messagebox.showerror("Error", "Client ID and Client Secret are required.")
             return
-        _write_env(id_var.get().strip(), secret_var.get().strip(), locale_var.get().strip())
-        result["ok"] = True
-        messagebox.showinfo("Success", "Credentials saved.")
-        root.destroy()
+        _set_status("Validating with Adobe...", "gray")
+        _disable_buttons(True)
 
-    ttk.Button(btns, text="Cancel", command=root.destroy).pack(side="right", padx=(0, 0))
+        def worker():
+            ok, msg = _validate_credentials(cid, sec)
+            root.after(0, lambda: _finish(ok, msg))
+
+        def _finish(ok: bool, msg: str):
+            _disable_buttons(False)
+            _set_status(("✓ " if ok else "✗ ") + msg, "green" if ok else "red")
+            on_done(ok, msg)
+
+        threading.Thread(target=worker, daemon=True).start()
+
+    def on_test():
+        _validate_async(lambda ok, msg: None)
+
+    def on_save():
+        def after_validate(ok: bool, msg: str):
+            if not ok:
+                if not messagebox.askyesno(
+                    "Validation failed",
+                    f"{msg}\n\nSave credentials anyway?",
+                ):
+                    return
+            _write_env(id_var.get().strip(), secret_var.get().strip(),
+                       locale_var.get().strip())
+            result["ok"] = True
+            if ok:
+                messagebox.showinfo("Success", "Credentials valid and saved.")
+            else:
+                messagebox.showwarning("Saved", "Credentials saved (NOT validated).")
+            root.destroy()
+        _validate_async(after_validate)
+
+    ttk.Button(btns, text="Cancel", command=root.destroy).pack(side="right")
     ttk.Button(btns, text="Save", command=on_save).pack(side="right", padx=(0, 8))
+    ttk.Button(btns, text="Test", command=on_test).pack(side="right", padx=(0, 8))
 
     frm.columnconfigure(1, weight=1)
     root.mainloop()
