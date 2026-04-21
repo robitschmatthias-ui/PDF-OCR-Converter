@@ -29,6 +29,19 @@ Write-Host "======================================"
 Write-Host "Projektverzeichnis: $ProjectDir"
 Write-Host ""
 
+# --- Preflight: Git ---
+# The installer itself doesn't call git, but the README instructs users to
+# `git clone` the repo first. If Git is missing, tell the user explicitly
+# instead of letting them hit a confusing error elsewhere.
+if (-not (Get-Command git -ErrorAction SilentlyContinue)) {
+    Write-Host "[X] Git nicht gefunden."
+    Write-Host "    Das Repo wird per 'git clone' bezogen. Git einmalig installieren:"
+    Write-Host "      winget install --id Git.Git -e --accept-package-agreements --accept-source-agreements"
+    Write-Host "    Danach PowerShell schliessen, neu oeffnen und Installation erneut starten."
+    exit 1
+}
+Write-Host "[+] Git gefunden"
+
 # --- Spinner helper ---
 # Runs $Exe with $Arguments, animates a spinner while the process runs,
 # and exits the installer with an error message if the process fails.
@@ -212,17 +225,25 @@ $OcrCmd         = "`"$PythonwExe`" `"$OcrScript`" `"%1`""
 $SettingsCmd    = "`"$PythonwExe`" `"$SettingsScript`""
 $RegRoot        = "HKCU:\Software\Classes\SystemFileAssociations\.pdf\shell"
 
-New-Item -Path "$RegRoot\OCR to DOCX\command"  -Force | Out-Null
-Set-ItemProperty -Path "$RegRoot\OCR to DOCX"          -Name "(default)" -Value "OCR to DOCX"
-Set-ItemProperty -Path "$RegRoot\OCR to DOCX"          -Name "Icon"      -Value $IconFile
-Set-ItemProperty -Path "$RegRoot\OCR to DOCX\command"  -Name "(default)" -Value $OcrCmd
+try {
+    New-Item -Path "$RegRoot\OCR to DOCX\command"  -Force | Out-Null
+    Set-ItemProperty -Path "$RegRoot\OCR to DOCX"          -Name "(default)" -Value "OCR to DOCX"
+    Set-ItemProperty -Path "$RegRoot\OCR to DOCX"          -Name "Icon"      -Value $IconFile
+    Set-ItemProperty -Path "$RegRoot\OCR to DOCX\command"  -Name "(default)" -Value $OcrCmd
 
-New-Item -Path "$RegRoot\OCR Settings\command" -Force | Out-Null
-Set-ItemProperty -Path "$RegRoot\OCR Settings"         -Name "(default)" -Value "OCR Settings"
-Set-ItemProperty -Path "$RegRoot\OCR Settings"         -Name "Icon"      -Value $IconFile
-Set-ItemProperty -Path "$RegRoot\OCR Settings\command" -Name "(default)" -Value $SettingsCmd
+    New-Item -Path "$RegRoot\OCR Settings\command" -Force | Out-Null
+    Set-ItemProperty -Path "$RegRoot\OCR Settings"         -Name "(default)" -Value "OCR Settings"
+    Set-ItemProperty -Path "$RegRoot\OCR Settings"         -Name "Icon"      -Value $IconFile
+    Set-ItemProperty -Path "$RegRoot\OCR Settings\command" -Name "(default)" -Value $SettingsCmd
 
-Write-Host "[+] Kontextmenue-Eintraege registriert"
+    Write-Host "[+] Kontextmenue-Eintraege registriert"
+} catch {
+    Write-Host "[X] Kontextmenue-Eintraege konnten nicht geschrieben werden"
+    Write-Host "    Fehler: $($_.Exception.Message)"
+    Write-Host "    Pfad:   $RegRoot"
+    Write-Host "    Bitte Ausgabe melden und Installer erneut starten."
+    exit 1
+}
 
 # --- First-run credential setup ---
 $ConfigFile = Join-Path $env:APPDATA "pdf-ocr-converter\.env"
