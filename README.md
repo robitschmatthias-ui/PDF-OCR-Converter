@@ -95,6 +95,11 @@ Three context-menu entries appear on PDF files:
 | **Merge & OCR to DOCX** | Multi-select only (Linux); merges first, then OCR |
 | **OCR Settings** | Re-enter / change Adobe credentials |
 
+A small progress window ("OCR running...") appears during processing and
+closes automatically when Adobe is done. The bar is indeterminate because
+the Adobe SDK provides no percentage feedback. A system notification fires
+on success or failure.
+
 ## Security
 
 - Credentials are stored **outside** the project directory (never commitable)
