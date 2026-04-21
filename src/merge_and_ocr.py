@@ -27,6 +27,7 @@ from ocr_convert import (
     _choose_locale,
     _notify,
     _ocr_then_export,
+    _run_with_progress,
 )
 
 logger = logging.getLogger("pdf-ocr-converter.merge")
@@ -86,10 +87,13 @@ def main(argv: list[str]) -> int:
     os.close(tmp_fd)
     tmp_path = Path(tmp_name)
 
-    try:
+    def _merge_and_ocr():
         merge_pdfs(files, tmp_path)
         pdf_services = _build_services(cfg.client_id, cfg.client_secret)
-        data = _ocr_then_export(pdf_services, tmp_path, locale)
+        return _ocr_then_export(pdf_services, tmp_path, locale)
+
+    try:
+        data = _run_with_progress(_merge_and_ocr)
         output_docx.write_bytes(data)
         _notify("Merge & OCR complete", f"Saved: {output_docx.name}")
         return 0

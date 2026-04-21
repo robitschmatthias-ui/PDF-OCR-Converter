@@ -16,6 +16,7 @@ from __future__ import annotations
 import logging
 import os
 import sys
+import threading
 from pathlib import Path
 
 from config import load_config, CredentialsMissingError, setup_logging
@@ -76,6 +77,51 @@ def _choose_locale(default: str) -> str:
     if not result["confirmed"]:
         return ""
     return result["locale"]
+
+
+def _run_with_progress(work):
+    """Run `work` in a background thread while showing an indeterminate
+    spinner window. Returns whatever `work` returned, or re-raises its
+    exception. Falls back to running synchronously if tkinter is unavailable.
+    """
+    try:
+        import tkinter as tk
+        from tkinter import ttk
+    except ImportError:
+        return work()
+
+    root = tk.Tk()
+    root.title("PDF-OCR-Converter")
+    root.geometry("360x130")
+    root.resizable(False, False)
+    root.attributes("-topmost", True)
+    root.protocol("WM_DELETE_WINDOW", lambda: None)
+
+    frm = ttk.Frame(root, padding=20)
+    frm.pack(fill="both", expand=True)
+    ttk.Label(frm, text="OCR running…",
+              font=("", 11, "bold")).pack(anchor="w", pady=(0, 4))
+    ttk.Label(frm, text="Adobe is processing your document. Please wait.",
+              foreground="gray", wraplength=320).pack(anchor="w", pady=(0, 12))
+    pb = ttk.Progressbar(frm, mode="indeterminate", length=320)
+    pb.pack(fill="x")
+    pb.start(12)
+
+    box = {"value": None, "exc": None}
+
+    def worker():
+        try:
+            box["value"] = work()
+        except BaseException as e:
+            box["exc"] = e
+        finally:
+            root.after(0, root.destroy)
+
+    threading.Thread(target=worker, daemon=True).start()
+    root.mainloop()
+    if box["exc"] is not None:
+        raise box["exc"]
+    return box["value"]
 
 
 def _build_services(client_id: str, client_secret: str):
@@ -167,15 +213,19 @@ def main(argv: list[str]) -> int:
         return 0  # User cancelled
     pdf_services = _build_services(cfg.client_id, cfg.client_secret)
 
-    errors = 0
-    for pdf in files:
-        try:
-            out = convert(pdf, locale, pdf_services)
-            _notify("OCR complete", f"Saved: {out.name}")
-        except Exception as e:
-            errors += 1
-            logger.exception("OCR failed for %s", pdf.name)
-            _notify("OCR failed", f"{pdf.name}: {type(e).__name__}")
+    def _run_all():
+        errors = 0
+        for pdf in files:
+            try:
+                out = convert(pdf, locale, pdf_services)
+                _notify("OCR complete", f"Saved: {out.name}")
+            except Exception as e:
+                errors += 1
+                logger.exception("OCR failed for %s", pdf.name)
+                _notify("OCR failed", f"{pdf.name}: {type(e).__name__}")
+        return errors
+
+    errors = _run_with_progress(_run_all)
     return 0 if errors == 0 else 1
 
 
