@@ -95,6 +95,12 @@ Im Kontextmenü von PDF-Dateien erscheinen drei Einträge:
 | **Merge & OCR to DOCX** | Nur bei Mehrfachauswahl (Linux); zuerst mergen, dann OCR |
 | **OCR Settings** | Adobe-Zugangsdaten neu eingeben / ändern |
 
+Während der OCR-Verarbeitung erscheint ein kleines Fortschritts-Fenster
+(„OCR running…") mit einer indeterminaten Bar. Es schließt sich automatisch,
+sobald Adobe fertig ist — die Bar bewegt sich, weil das Adobe SDK keine
+Prozent-Rückmeldung liefert. Bei Erfolg/Fehler kommt zusätzlich eine
+System-Benachrichtigung.
+
 ## Sicherheit
 
 - Zugangsdaten werden **außerhalb** des Projektordners gespeichert (nie commitbar)
