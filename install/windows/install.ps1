@@ -1,4 +1,4 @@
-# PDF-OCR-Converter - Windows installer
+﻿# PDF-OCR-Converter - Windows installer
 #
 # Fully self-contained:
 #   - Checks for Python 3.10+ and installs it via winget if missing
@@ -55,7 +55,10 @@ function Invoke-Step {
     $outFile = [System.IO.Path]::GetTempFileName()
     $errFile = [System.IO.Path]::GetTempFileName()
 
-    $proc = Start-Process -FilePath $Exe -ArgumentList $Arguments `
+    $quotedArgs = $Arguments | ForEach-Object {
+        if ($_ -match '\s') { "`"$_`"" } else { $_ }
+    }
+    $proc = Start-Process -FilePath $Exe -ArgumentList $quotedArgs `
         -RedirectStandardOutput $outFile -RedirectStandardError $errFile `
         -NoNewWindow -PassThru
 
@@ -67,7 +70,7 @@ function Invoke-Step {
     }
     $proc.WaitForExit()
 
-    if ($proc.ExitCode -ne 0) {
+    if (([int]$proc.ExitCode) -ne 0) {
         Write-Host "`r[X] $Label (Exit $($proc.ExitCode))                         "
         $stdout = Get-Content $outFile -Raw -ErrorAction SilentlyContinue
         $stderr = Get-Content $errFile -Raw -ErrorAction SilentlyContinue
@@ -191,7 +194,7 @@ if (Test-Path $VenvDir) {
     $venvOk = $false
     if (Test-Path $PythonExe) {
         & $PythonExe -c "import sys" 2>$null | Out-Null
-        if ($LASTEXITCODE -eq 0) { $venvOk = $true }
+        if (([int]$LASTEXITCODE) -eq 0) { $venvOk = $true }
     }
     if (-not $venvOk) {
         Write-Host "[>] Defektes venv aus vorherigem Lauf wird entfernt..."
@@ -256,3 +259,5 @@ Write-Host ""
 Write-Host "[+] Installation abgeschlossen."
 Write-Host "    Rechtsklick auf eine PDF-Datei > 'OCR to DOCX' oder 'OCR Settings'."
 Write-Host "    (Windows 11: ggf. erst 'Weitere Optionen anzeigen' klicken)"
+
+
