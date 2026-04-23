@@ -45,7 +45,7 @@ def _choose_locale(default: str) -> str:
     result = {"locale": default, "confirmed": False}
     root = tk.Tk()
     root.title("PDF-OCR-Converter — Document Language")
-    root.geometry("420x180")
+    root.geometry("420x220")
     frm = ttk.Frame(root, padding=16)
     frm.pack(fill="both", expand=True)
     ttk.Label(
