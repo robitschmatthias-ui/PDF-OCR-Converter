@@ -5,7 +5,7 @@ Usage:
   python merge_and_ocr.py <file1.pdf> <file2.pdf> [...]
 
 Behavior:
-  - Files are merged in the order given (Nemo passes them sorted).
+  - Files are merged in the order given (the file manager passes them sorted).
   - The merged PDF is written to a temp file, processed by Adobe OCR,
     and then securely deleted.
   - Output DOCX is saved next to the FIRST input file with suffix "_OCR":
