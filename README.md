@@ -1,8 +1,8 @@
 # PDF-OCR-Converter
 
-![platform](https://img.shields.io/badge/platform-Linux%20%7C%20Windows-blue)
+![platform](https://img.shields.io/badge/platform-Linux%20%7C%20Fedora%20%7C%20Windows-blue)
 ![language](https://img.shields.io/badge/language-Python%203.10%2B-yellow)
-![file-manager](https://img.shields.io/badge/file--manager-Nemo%20%7C%20Explorer-orange)
+![file-manager](https://img.shields.io/badge/file--manager-Nemo%20%7C%20Nautilus%20%7C%20Explorer-orange)
 ![OCR](https://img.shields.io/badge/OCR-Adobe%20PDF%20Services-red)
 ![license](https://img.shields.io/badge/license-GPL%20v3-blue)
 ![Stars](https://img.shields.io/github/stars/robitschmatthias-ui/PDF-OCR-Converter?style=social)
@@ -11,15 +11,17 @@
 
 A cross-platform tool that converts PDF files to editable DOCX via the
 **Adobe PDF Services API** (OCR), triggered by right-click context menu
-on Linux (Nemo) and Windows (Explorer).
+on Linux Mint (Nemo), Fedora/GNOME (Nautilus), and Windows (Explorer).
 
 ## Features
 
-- **Right-click integration** on Linux (Nemo) and Windows (Explorer)
+- **Right-click integration** on Linux Mint (Nemo), Fedora/GNOME (Nautilus),
+  and Windows (Explorer)
 - **OCR to DOCX** — convert a single PDF or multiple PDFs (one-by-one)
-- **Merge & OCR to DOCX** (Linux only, multi-selection) — combines several
-  PDFs into one using the [Linux-PDF-Merge-in-Nemo](https://github.com/robitschmatthias-ui/Linux-PDF-Merge-in-Nemo)
-  Quick Merge, then sends the merged file to Adobe OCR
+- **Merge & OCR to DOCX** (Linux and Fedora, multi-selection) — combines
+  several PDFs into one, then sends the merged file to Adobe OCR. On Linux
+  Mint this uses the [Linux-PDF-Merge-in-Nemo](https://github.com/robitschmatthias-ui/Linux-PDF-Merge-in-Nemo)
+  Quick Merge; on Fedora the merge is built in
 - **Language dialog** — choose the OCR language (tkinter)
 - **Desktop notifications** via `plyer`
 - **Secure credential handling** — credentials are stored outside the repo
@@ -54,7 +56,7 @@ You need a free Adobe Developer account.
 6. Enter both in the setup dialog (opens automatically on first install, or via
    right-click → **OCR Settings**).
 
-Credentials are saved to `~/.config/pdf-ocr-converter/.env` on Linux or
+Credentials are saved to `~/.config/pdf-ocr-converter/.env` on Linux/Fedora or
 `%APPDATA%\pdf-ocr-converter\.env` on Windows — never inside the repo.
 
 For the full walkthrough see [docs/adobe-credentials.md](docs/adobe-credentials.md).
@@ -77,6 +79,34 @@ git clone https://github.com/robitschmatthias-ui/PDF-OCR-Converter.git ~/scripts
 cd ~/scripts/pdf-ocr-converter
 bash install/linux/install.sh
 ```
+
+On first use, a setup dialog prompts for your Adobe credentials and stores
+them in `~/.config/pdf-ocr-converter/.env`.
+
+### Fedora (GNOME Files / Nautilus)
+
+**Prerequisite: Git** must be installed. If you see
+`bash: git: command not found`, install it once:
+
+```bash
+sudo dnf install -y git
+```
+
+Then install:
+
+```bash
+git clone https://github.com/robitschmatthias-ui/PDF-OCR-Converter.git ~/scripts/pdf-ocr-converter
+cd ~/scripts/pdf-ocr-converter
+bash install/fedora/install.sh
+```
+
+The installer pulls any missing system packages via `dnf` (one sudo prompt:
+`python3-tkinter`, `nautilus-python`, `python3-dbus`, `libnotify`), then
+copies the app into `~/.local/share/pdf-ocr-converter` and builds a `.venv`
+there — so the cloned folder can be deleted afterwards, the tool keeps
+working. If the right-click entries don't appear right away, log out and
+back in once so GNOME loads the new Nautilus extension. To uninstall later,
+run `bash install/fedora/uninstall.sh` from the app folder.
 
 On first use, a setup dialog prompts for your Adobe credentials and stores
 them in `~/.config/pdf-ocr-converter/.env`.
@@ -113,7 +143,7 @@ Three context-menu entries appear on PDF files:
 | Entry | Behavior |
 |---|---|
 | **OCR to DOCX** | Single file or multi-select (each processed separately) |
-| **Merge & OCR to DOCX** | Multi-select only (Linux); merges first, then OCR |
+| **Merge & OCR to DOCX** | Multi-select only (Linux Mint, Fedora); merges first, then OCR |
 | **OCR Settings** | Re-enter / change Adobe credentials |
 
 A small progress window ("OCR running...") appears during processing and
