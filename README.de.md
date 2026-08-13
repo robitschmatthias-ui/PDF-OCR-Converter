@@ -1,8 +1,8 @@
 # PDF-OCR-Converter
 
-![platform](https://img.shields.io/badge/platform-Linux%20%7C%20Windows-blue)
+![platform](https://img.shields.io/badge/platform-Linux%20%7C%20Fedora%20%7C%20Windows-blue)
 ![language](https://img.shields.io/badge/language-Python%203.10%2B-yellow)
-![file-manager](https://img.shields.io/badge/file--manager-Nemo%20%7C%20Explorer-orange)
+![file-manager](https://img.shields.io/badge/file--manager-Nemo%20%7C%20Nautilus%20%7C%20Explorer-orange)
 ![OCR](https://img.shields.io/badge/OCR-Adobe%20PDF%20Services-red)
 ![license](https://img.shields.io/badge/license-GPL%20v3-blue)
 ![Stars](https://img.shields.io/github/stars/robitschmatthias-ui/PDF-OCR-Converter?style=social)
@@ -11,15 +11,18 @@
 
 Ein plattformübergreifendes Tool, das PDF-Dateien per **Adobe PDF Services
 API** (OCR) in bearbeitbare DOCX-Dateien umwandelt – ausgelöst per
-Rechtsklick im Dateimanager unter Linux (Nemo) und Windows (Explorer).
+Rechtsklick im Dateimanager unter Linux Mint (Nemo), Fedora/GNOME (Nautilus)
+und Windows (Explorer).
 
 ## Funktionen
 
-- **Rechtsklick-Integration** unter Linux (Nemo) und Windows (Explorer)
+- **Rechtsklick-Integration** unter Linux Mint (Nemo), Fedora/GNOME (Nautilus)
+  und Windows (Explorer)
 - **OCR to DOCX** – einzelne PDF oder mehrere PDFs (einzeln verarbeitet)
-- **Merge & OCR to DOCX** (nur Linux, Mehrfachauswahl) – fügt mehrere PDFs
-  mit dem Quick Merge aus [Linux-PDF-Merge-in-Nemo](https://github.com/robitschmatthias-ui/Linux-PDF-Merge-in-Nemo)
-  zusammen und schickt die zusammengeführte Datei zur Adobe OCR
+- **Merge & OCR to DOCX** (Linux und Fedora, Mehrfachauswahl) – fügt mehrere
+  PDFs zusammen und schickt die zusammengeführte Datei zur Adobe OCR. Unter
+  Linux Mint per Quick Merge aus [Linux-PDF-Merge-in-Nemo](https://github.com/robitschmatthias-ui/Linux-PDF-Merge-in-Nemo),
+  unter Fedora ist das Zusammenführen bereits eingebaut
 - **Sprachauswahl-Dialog** – OCR-Sprache wählbar (tkinter)
 - **Desktop-Benachrichtigungen** via `plyer`
 - **Sichere Credential-Verwaltung** – Zugangsdaten werden außerhalb des
@@ -54,8 +57,8 @@ Du brauchst einen kostenlosen Adobe Developer Account.
 6. Beides in den Setup-Dialog eintragen (öffnet sich automatisch bei der ersten
    Installation oder per Rechtsklick → **OCR Settings**).
 
-Die Zugangsdaten werden unter `~/.config/pdf-ocr-converter/.env` (Linux) bzw.
-`%APPDATA%\pdf-ocr-converter\.env` (Windows) gespeichert – niemals im Repo.
+Die Zugangsdaten werden unter `~/.config/pdf-ocr-converter/.env` (Linux/Fedora)
+bzw. `%APPDATA%\pdf-ocr-converter\.env` (Windows) gespeichert – niemals im Repo.
 
 Ausführliche Anleitung: [docs/adobe-credentials.md](docs/adobe-credentials.md).
 
@@ -77,6 +80,35 @@ git clone https://github.com/robitschmatthias-ui/PDF-OCR-Converter.git ~/scripts
 cd ~/scripts/pdf-ocr-converter
 bash install/linux/install.sh
 ```
+
+Beim ersten Aufruf öffnet sich ein Dialog zur Eingabe der Adobe-Zugangsdaten;
+diese werden unter `~/.config/pdf-ocr-converter/.env` gespeichert.
+
+### Fedora (GNOME Files / Nautilus)
+
+**Voraussetzung: Git** muss installiert sein. Falls du `bash: git: command not found`
+siehst, einmalig:
+
+```bash
+sudo dnf install -y git
+```
+
+Anschließend Installation:
+
+```bash
+git clone https://github.com/robitschmatthias-ui/PDF-OCR-Converter.git ~/scripts/pdf-ocr-converter
+cd ~/scripts/pdf-ocr-converter
+bash install/fedora/install.sh
+```
+
+Der Installer holt fehlende Systempakete per `dnf` (ein sudo-Prompt:
+`python3-tkinter`, `nautilus-python`, `python3-dbus`, `libnotify`), kopiert
+die App anschließend nach `~/.local/share/pdf-ocr-converter` und legt dort
+eine `.venv` an — der geklonte Ordner kann danach gelöscht werden, das Tool
+funktioniert weiter. Falls die Rechtsklick-Einträge nicht sofort erscheinen,
+einmal aus- und wieder einloggen, damit GNOME die neue Nautilus-Erweiterung
+lädt. Zum Deinstallieren später `bash install/fedora/uninstall.sh` aus dem
+App-Ordner ausführen.
 
 Beim ersten Aufruf öffnet sich ein Dialog zur Eingabe der Adobe-Zugangsdaten;
 diese werden unter `~/.config/pdf-ocr-converter/.env` gespeichert.
@@ -113,7 +145,7 @@ Im Kontextmenü von PDF-Dateien erscheinen drei Einträge:
 | Eintrag | Verhalten |
 |---|---|
 | **OCR to DOCX** | Einzelne Datei oder Mehrfachauswahl (jeweils einzeln verarbeitet) |
-| **Merge & OCR to DOCX** | Nur bei Mehrfachauswahl (Linux); zuerst mergen, dann OCR |
+| **Merge & OCR to DOCX** | Nur bei Mehrfachauswahl (Linux Mint, Fedora); zuerst mergen, dann OCR |
 | **OCR Settings** | Adobe-Zugangsdaten neu eingeben / ändern |
 
 Während der OCR-Verarbeitung erscheint ein kleines Fortschritts-Fenster

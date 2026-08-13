@@ -25,11 +25,29 @@ logger = logging.getLogger("pdf-ocr-converter")
 
 
 def _notify(title: str, message: str) -> None:
+    """Show a desktop notification.
+
+    Tries plyer first, then falls back to notify-send (libnotify, standard on
+    Fedora/GNOME), and finally to stdout so nothing is ever silently lost.
+    """
     try:
         from plyer import notification
         notification.notify(title=title, message=message, app_name="PDF-OCR-Converter", timeout=6)
+        return
     except Exception:
-        print(f"[{title}] {message}")
+        pass
+    try:
+        import shutil
+        import subprocess
+        if shutil.which("notify-send"):
+            subprocess.run(
+                ["notify-send", "--app-name=PDF-OCR-Converter", title, message],
+                check=False,
+            )
+            return
+    except Exception:
+        pass
+    print(f"[{title}] {message}")
 
 
 def _choose_locale(default: str) -> str:
