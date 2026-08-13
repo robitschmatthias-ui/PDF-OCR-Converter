@@ -22,7 +22,10 @@ def config_dir() -> Path:
     if sys.platform == "win32":
         base = os.environ.get("APPDATA") or str(Path.home() / "AppData" / "Roaming")
         return Path(base) / APP_NAME
-    return Path.home() / ".config" / APP_NAME
+    # Respect XDG_CONFIG_HOME on Linux/Fedora, fall back to ~/.config
+    xdg = os.environ.get("XDG_CONFIG_HOME")
+    base = Path(xdg) if xdg else Path.home() / ".config"
+    return base / APP_NAME
 
 
 def config_file() -> Path:

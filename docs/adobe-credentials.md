@@ -25,8 +25,13 @@ Right-click any PDF in your file manager and choose **OCR Settings**,
 or run:
 
 ```bash
-# Linux
+# Linux Mint
 ~/scripts/pdf-ocr-converter/install/linux/setup_credentials.sh
+```
+
+```bash
+# Fedora
+bash install/fedora/setup_credentials.sh
 ```
 
 ```powershell
@@ -40,8 +45,12 @@ or run:
 python src/setup_credentials.py --cli
 ```
 
+On Fedora, if you installed via `install/fedora/install.sh`, use the venv
+Python instead: `./.venv/bin/python src/setup_credentials.py --cli`
+(run from `~/.local/share/pdf-ocr-converter`).
+
 Your credentials are written to:
-- Linux: `~/.config/pdf-ocr-converter/.env`
+- Linux / Fedora: `~/.config/pdf-ocr-converter/.env`
 - Windows: `%APPDATA%\pdf-ocr-converter\.env`
 
 These files are **outside the project repo** and cannot be accidentally
@@ -56,12 +65,21 @@ committed to git.
 
 ## 5. Supported OCR locales
 
-`de-de`, `en-us`, `fr-fr`, `it-it`, `es-es`, `nl-nl`,
-`da-dk`, `fi-fi`, `nb-no`, `sv-se`, `pt-br`,
-`ja-jp`, `ko-kr`, `zh-cn`, `zh-tw`
+```
+de-de, de-ch, en-us, en-gb,
+fr-fr, it-it, es-es, nl-nl, pt-br,
+da-dk, fi-fi, nb-no, sv-se,
+cs-cz, pl-pl, hu-hu, ro-ro, sk-sk, sl-si, hr-hr,
+bg-bg, el-gr, et-ee, lt-lt, lv-lv, mk-mk, mt-mt,
+ru-ru, tr-tr, uk-ua,
+ja-jp, ko-kr, zh-cn, zh-hk,
+iw-il
+```
 
 The default locale is set in the setup dialog and can be overridden per
-conversion via the language picker that appears when you trigger OCR.
+conversion via the language picker that appears when you trigger OCR. If a
+locale is not recognized by the installed SDK, the tool falls back to
+`en-us`.
 
 ## 6. Privacy note
 
@@ -70,3 +88,12 @@ for up to 24 hours during processing. This falls under Adobe's terms of
 service and is outside the control of this tool. For GDPR-sensitive
 documents, consider a local OCR alternative such as
 [OCRmyPDF](https://github.com/ocrmypdf/OCRmyPDF).
+
+## 7. Troubleshooting (Fedora)
+
+- **"Adobe rejected the credentials"** — double-check the Client ID/Secret and
+  that the credential type is *OAuth Server-to-Server*.
+- **Nothing happens on right-click** — make sure `nautilus-python` is
+  installed (`rpm -q nautilus-python`) and log out/in once so GNOME loads the
+  extension.
+- **Logs** — errors are written to `~/.config/pdf-ocr-converter/ocr.log`.
