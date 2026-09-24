@@ -23,7 +23,10 @@ on Linux Mint (Nemo), Fedora/GNOME (Nautilus), and Windows (Explorer).
   Mint this uses the [Linux-PDF-Merge-in-Nemo](https://github.com/robitschmatthias-ui/Linux-PDF-Merge-in-Nemo)
   Quick Merge; on Fedora the merge is built in
 - **Language dialog** — choose the OCR language (tkinter)
-- **Desktop notifications** via `plyer`
+- **Checks before upload** — files Adobe would reject are caught locally,
+  before any transaction is used (see [Checks before upload](#checks-before-upload))
+- **Desktop notification** via `plyer` on success; failures open a dialog
+  that stays until you close it
 - **Secure credential handling** — credentials are stored outside the repo
   in `~/.config/pdf-ocr-converter/.env` (never committed to git)
 
@@ -148,8 +151,32 @@ Three context-menu entries appear on PDF files:
 
 A small progress window ("OCR running...") appears during processing and
 closes automatically when Adobe is done. The bar is indeterminate because
-the Adobe SDK provides no percentage feedback. A system notification fires
-on success or failure.
+the Adobe SDK provides no percentage feedback. **Closing the window cancels
+the conversion.** If Adobe does not answer within **4 minutes**, the tool
+gives up on its own instead of waiting indefinitely. A system notification
+fires on success; failures are shown in a dialog with the reason.
+
+Brief network drops while waiting for Adobe are retried automatically
+(up to 2 retries).
+
+## Checks before upload
+
+Before anything is sent to Adobe, each PDF is checked locally. No Adobe
+transactions are used for files that fail these checks.
+
+| Check | Result |
+|---|---|
+| File larger than 100 MB (Adobe's documented limit) | Rejected |
+| Not actually a PDF (only the name ends in `.pdf`) | Rejected |
+| Damaged, cannot be read | Rejected |
+| Needs a password to open | Rejected — remove the password first |
+| Encrypted, but opens without a password (permissions restricted only) | Warning — Adobe may reject it |
+| More than 100 pages | Warning — Adobe's OCR is known to fail beyond about 100 pages |
+| Already contains text (digital PDF, or the scanner added its own OCR layer) | Warning — Adobe's OCR has been seen to hang on such files until it times out |
+
+For warnings you can choose to continue anyway. With **Merge & OCR** every
+input file is checked, and the merged file is checked again for size and
+page count.
 
 ## Security
 

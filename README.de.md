@@ -24,7 +24,11 @@ und Windows (Explorer).
   Linux Mint per Quick Merge aus [Linux-PDF-Merge-in-Nemo](https://github.com/robitschmatthias-ui/Linux-PDF-Merge-in-Nemo),
   unter Fedora ist das Zusammenführen bereits eingebaut
 - **Sprachauswahl-Dialog** – OCR-Sprache wählbar (tkinter)
-- **Desktop-Benachrichtigungen** via `plyer`
+- **Prüfung vor dem Upload** – Dateien, die Adobe ablehnen würde, werden
+  lokal erkannt, bevor eine Transaktion verbraucht wird (siehe
+  [Prüfung vor dem Upload](#prüfung-vor-dem-upload))
+- **Desktop-Benachrichtigung** via `plyer` bei Erfolg; Fehler öffnen einen
+  Dialog, der stehen bleibt, bis du ihn schließt
 - **Sichere Credential-Verwaltung** – Zugangsdaten werden außerhalb des
   Repos in `~/.config/pdf-ocr-converter/.env` gespeichert (nicht in git)
 
@@ -151,8 +155,32 @@ Im Kontextmenü von PDF-Dateien erscheinen drei Einträge:
 Während der OCR-Verarbeitung erscheint ein kleines Fortschritts-Fenster
 („OCR running…") mit einer indeterminaten Bar. Es schließt sich automatisch,
 sobald Adobe fertig ist — die Bar bewegt sich, weil das Adobe SDK keine
-Prozent-Rückmeldung liefert. Bei Erfolg/Fehler kommt zusätzlich eine
-System-Benachrichtigung.
+Prozent-Rückmeldung liefert. **Wer das Fenster schließt, bricht die
+Konvertierung ab.** Antwortet Adobe nicht innerhalb von **4 Minuten**, gibt
+das Tool von sich aus auf, statt endlos zu warten. Bei Erfolg kommt eine
+System-Benachrichtigung; Fehler erscheinen als Dialog mit dem Grund.
+
+Kurze Netzwerkaussetzer während des Wartens auf Adobe werden automatisch
+wiederholt (bis zu 2 Wiederholungen).
+
+## Prüfung vor dem Upload
+
+Bevor etwas zu Adobe geht, wird jede PDF lokal geprüft. Für Dateien, die
+dabei durchfallen, wird keine Adobe-Transaktion verbraucht.
+
+| Prüfung | Ergebnis |
+|---|---|
+| Datei größer als 100 MB (Adobes dokumentierte Grenze) | Abgelehnt |
+| Gar keine PDF (nur der Name endet auf `.pdf`) | Abgelehnt |
+| Beschädigt, lässt sich nicht lesen | Abgelehnt |
+| Braucht ein Passwort zum Öffnen | Abgelehnt — Passwort vorher entfernen |
+| Verschlüsselt, öffnet aber ohne Passwort (nur Rechte eingeschränkt) | Warnung — Adobe lehnt sie möglicherweise ab |
+| Mehr als 100 Seiten | Warnung — Adobes OCR scheitert erfahrungsgemäß ab etwa 100 Seiten |
+| Enthält bereits Text (digitale PDF, oder der Scanner hat eine eigene OCR-Schicht eingebettet) | Warnung — Adobes OCR hing bei solchen Dateien schon bis zum Timeout |
+
+Bei Warnungen kannst du trotzdem fortfahren. Bei **Merge & OCR** wird jede
+Eingabedatei geprüft und die zusammengeführte Datei noch einmal auf Größe
+und Seitenzahl.
 
 ## Sicherheit
 
