@@ -17,11 +17,43 @@ import logging
 import os
 import sys
 import threading
+import time
 from pathlib import Path
 
 from config import load_config, CredentialsMissingError, setup_logging
 
 logger = logging.getLogger("pdf-ocr-converter")
+
+_TRANSIENT_RETRIES = 2
+_TRANSIENT_RETRY_DELAY = 5  # seconds
+
+
+def _with_retry(func, *args, **kwargs):
+    """Run func, retrying on transient network/timeout errors from the Adobe
+    SDK (it does not retry these itself; a brief hiccup otherwise aborts the
+    whole job with no output file). Non-transient errors raise immediately.
+    """
+    from adobe.pdfservices.operation.exception.exceptions import SdkException
+
+    for attempt in range(1, _TRANSIENT_RETRIES + 2):
+        try:
+            return func(*args, **kwargs)
+        except SdkException as e:
+            tracking = getattr(e, "request_tracking_id", None)
+            cause = tracking[1] if tracking else None
+            is_transient = cause is not None and type(cause).__name__ in (
+                "ReadTimeout",
+                "ConnectTimeout",
+                "ConnectionError",
+                "Timeout",
+            )
+            if not is_transient or attempt > _TRANSIENT_RETRIES:
+                raise
+            logger.warning(
+                "Transient network error (attempt %d/%d), retrying in %ds: %s",
+                attempt, _TRANSIENT_RETRIES + 1, _TRANSIENT_RETRY_DELAY, cause,
+            )
+            time.sleep(_TRANSIENT_RETRY_DELAY)
 
 
 def _notify(title: str, message: str) -> None:
@@ -146,10 +178,15 @@ def _build_services(client_id: str, client_secret: str):
     from adobe.pdfservices.operation.auth.service_principal_credentials import (
         ServicePrincipalCredentials,
     )
+    from adobe.pdfservices.operation.config.client_config import ClientConfig
     from adobe.pdfservices.operation.pdf_services import PDFServices
 
     creds = ServicePrincipalCredentials(client_id=client_id, client_secret=client_secret)
-    return PDFServices(credentials=creds)
+    # Adobe's SDK default connect_timeout (4s) is too tight for polling job
+    # status over a real-world connection; a brief network hiccup aborts the
+    # whole job with no retry and no output file.
+    client_config = ClientConfig(connect_timeout=10000, read_timeout=20000)
+    return PDFServices(credentials=creds, client_config=client_config)
 
 
 def _ocr_then_export(pdf_services, input_pdf: Path, locale: str) -> bytes:
@@ -204,7 +241,7 @@ def _locale_to_enum(locale: str, enum_cls):
 
 def convert(pdf_path: Path, locale: str, pdf_services) -> Path:
     output_path = pdf_path.with_name(f"{pdf_path.stem}_OCR.docx")
-    data = _ocr_then_export(pdf_services, pdf_path, locale)
+    data = _with_retry(_ocr_then_export, pdf_services, pdf_path, locale)
     output_path.write_bytes(data)
     return output_path
 
