@@ -138,9 +138,9 @@ function Test-PythonOk {
         "$env:ProgramFiles\Python312\python.exe",
         "$env:ProgramFiles\Python311\python.exe",
         "$env:ProgramFiles\Python310\python.exe",
-        "$env:ProgramFiles(x86)\Python312\python.exe",
-        "$env:ProgramFiles(x86)\Python311\python.exe",
-        "$env:ProgramFiles(x86)\Python310\python.exe"
+        "${env:ProgramFiles(x86)}\Python312\python.exe",
+        "${env:ProgramFiles(x86)}\Python311\python.exe",
+        "${env:ProgramFiles(x86)}\Python310\python.exe"
     )
     foreach ($p in $paths) {
         if ((Test-Path $p) -and (Test-PythonVersion -Exe $p)) {

@@ -20,9 +20,8 @@ und Windows (Explorer).
   und Windows (Explorer)
 - **OCR to DOCX** – einzelne PDF oder mehrere PDFs (einzeln verarbeitet)
 - **Merge & OCR to DOCX** (Linux und Fedora, Mehrfachauswahl) – fügt mehrere
-  PDFs zusammen und schickt die zusammengeführte Datei zur Adobe OCR. Unter
-  Linux Mint per Quick Merge aus [Linux-PDF-Merge-in-Nemo](https://github.com/robitschmatthias-ui/Linux-PDF-Merge-in-Nemo),
-  unter Fedora ist das Zusammenführen bereits eingebaut
+  PDFs zusammen und schickt die zusammengeführte Datei zur Adobe OCR. Das
+  Zusammenführen ist eingebaut (pypdf) und braucht kein zusätzliches Tool
 - **Sprachauswahl-Dialog** – OCR-Sprache wählbar (tkinter)
 - **Prüfung vor dem Upload** – Dateien, die Adobe ablehnen würde, werden
   lokal erkannt, bevor eine Transaktion verbraucht wird (siehe

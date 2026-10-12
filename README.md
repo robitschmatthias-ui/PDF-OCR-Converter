@@ -19,9 +19,8 @@ on Linux Mint (Nemo), Fedora/GNOME (Nautilus), and Windows (Explorer).
   and Windows (Explorer)
 - **OCR to DOCX** — convert a single PDF or multiple PDFs (one-by-one)
 - **Merge & OCR to DOCX** (Linux and Fedora, multi-selection) — combines
-  several PDFs into one, then sends the merged file to Adobe OCR. On Linux
-  Mint this uses the [Linux-PDF-Merge-in-Nemo](https://github.com/robitschmatthias-ui/Linux-PDF-Merge-in-Nemo)
-  Quick Merge; on Fedora the merge is built in
+  several PDFs into one, then sends the merged file to Adobe OCR. The merge
+  is built in (pypdf) and needs no additional tool
 - **Language dialog** — choose the OCR language (tkinter)
 - **Checks before upload** — files Adobe would reject are caught locally,
   before any transaction is used (see [Checks before upload](#checks-before-upload))
